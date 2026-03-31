@@ -126,10 +126,10 @@ void FFTOcean::form_xyz_array(void) {
 
             float dx = this->Gx[idx].real();
             float dz = this->Gz[idx].real();
-            float grad_norm = sqrt(dx*dx + 1.f*1.f * dz*dz);
-            this->gxyz_coord[idx*3+0] = -dx / grad_norm;
-            this->gxyz_coord[idx*3+1] = 1.f / grad_norm;
-            this->gxyz_coord[idx*3+2] = -dz / grad_norm;
+            float grad_norm = sqrt(dx*dx + 1.f*1.f + dz*dz);
+            this->gxyz_coord[idx*3+0] = dx / grad_norm;
+            this->gxyz_coord[idx*3+1] = -1.f / grad_norm;
+            this->gxyz_coord[idx*3+2] = dz / grad_norm;
         }
     }
 }

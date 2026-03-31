@@ -80,27 +80,28 @@ createModule().then((Module) => {
         document.body.appendChild(renderer.domElement);
 
         geometry = new THREE.PlaneGeometry(L, L, N-1, N-1);
-        material = new THREE.MeshNormalMaterial({wireframe: true, side: THREE.DoubleSide});
+        //material = new THREE.MeshNormalMaterial({wireframe: true, side: THREE.DoubleSide});
 
-        //material = new THREE.MeshStandardMaterial({
-        //    color: 0x001eff,       // ベースとなる水の色（深い青緑）
-        //    metalness: 1.0,        // 金属光沢（鏡のような反射にするため高めに）
-        //    roughness: 0.1,        // 表面の粗さ（滑らかにするため低めに）
-        //    wireframe: false,       // ワイヤーフレームをオフにする（形を見るならtrueでもOK）
-        //    side: THREE.DoubleSide // 両面を描画
-        //});
+        material = new THREE.MeshStandardMaterial({
+            color: 0x00bfff,       // ベースとなる水の色（深い青緑）
+            metalness: 0.9,        // 金属光沢（鏡のような反射にするため高めに）
+            roughness: 0.5,        // 表面の粗さ（滑らかにするため低めに）
+            //wireframe: false,       // ワイヤーフレームをオフにする（形を見るならtrueでもOK）
+            side: THREE.DoubleSide // 両面を描画
+        });
         const oceanMesh = new THREE.Mesh(geometry, material);
         scene.add(oceanMesh);
 
         // 太陽光（平行光源）を追加
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.0); // 白色の光、強さ1.0
-        sunLight.position.set(100, 100, 100); // 光の来る方向
+        sunLight.position.set(0, 100, 100); // 光の来る方向
         scene.add(sunLight);
 
         // 環境光（影の部分が真っ黒になるのを防ぐ）を追加
         const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); 
         scene.add(ambientLight);
         const controls = new OrbitControls(camera, renderer.domElement);
+        scene.environment = scene.background;
     }
 
     function animate() {
