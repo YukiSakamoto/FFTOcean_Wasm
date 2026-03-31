@@ -17,11 +17,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("get_height_scale", &FFTOcean::get_height_scale)
         .function("set_choppy_coefficient", &FFTOcean::set_choppy_coefficient)
         .function("get_choppy_coefficient", &FFTOcean::get_choppy_coefficient)
-        .function("get_ht_real_ptr", &FFTOcean::get_ht_real_ptr)
-        .function("get_Gx_real_ptr", &FFTOcean::get_Gx_real_ptr, emscripten::allow_raw_pointers())
-        .function("get_Gz_real_ptr", &FFTOcean::get_Gz_real_ptr, emscripten::allow_raw_pointers())
-        .function("get_Dx_real_ptr", &FFTOcean::get_Dx_real_ptr, emscripten::allow_raw_pointers())
-        .function("get_Dz_real_ptr", &FFTOcean::get_Dz_real_ptr, emscripten::allow_raw_pointers())
         ;
 }
 #else

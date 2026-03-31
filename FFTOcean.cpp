@@ -103,15 +103,34 @@ void FFTOcean::processSign() {
     }
 }
 
-void FFTOcean::update_realvalue_vector()
-{
+void FFTOcean::form_xyz_array(void) {
     bool calculate_choppy = this->choppy_lambda > 1e-6f ? true : false;
-    this->copy_real_value(ht, ht_real);
-    this->copy_real_value(Gx, Gx_real);
-    this->copy_real_value(Gz, Gz_real);
-    if (calculate_choppy) {
-        this->copy_real_value(Dx, Dx_real);
-        this->copy_real_value(Dz, Dz_real);
+    for(size_t i = 0; i < this->N; i++) {
+        for(size_t j = 0; j < this->N; j++) {
+            size_t idx = i * N + j;
+            float x = ((float)i / (float)(N-1)) * Length - Length / 2.0f;
+            float z = ((float)j / (float)(N-1)) * Length - Length / 2.0f;
+            float y = this->ht[idx].real();
+
+            this->xyz_coord[idx*3+0] = x;
+            this->xyz_coord[idx*3+1] = y;
+            this->xyz_coord[idx*3+2] = z;
+
+            if (calculate_choppy) {
+                float choppy_x = this->Dx[idx].real();
+                float choppy_z = this->Dz[idx].real();
+                this->xyz_coord[idx*3+0] += this->choppy_lambda * choppy_x;
+                this->xyz_coord[idx*3+2] += this->choppy_lambda * choppy_z;
+            } 
+
+
+            float dx = this->Gx[idx].real();
+            float dz = this->Gz[idx].real();
+            float grad_norm = sqrt(dx*dx + 1.f*1.f * dz*dz);
+            this->gxyz_coord[idx*3+0] = -dx / grad_norm;
+            this->gxyz_coord[idx*3+1] = 1.f / grad_norm;
+            this->gxyz_coord[idx*3+2] = -dz / grad_norm;
+        }
     }
 }
 
@@ -122,7 +141,6 @@ void FFTOcean::Update(float t)
     this->calculate_grad();
     this->iFFT();
     this->processSign();
-    this->update_realvalue_vector();
     this->form_xyz_array();
 }
 
