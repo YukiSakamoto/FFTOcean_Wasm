@@ -7,6 +7,7 @@ import createModule from './fftocean_wasm.js';
 
 let scene, camera, renderer;
 let geometry, cube, material;
+let axesHelper;
 let coordinateArray;
 let xyz_geometry;
 let mesh;       // instanced mesh
@@ -18,6 +19,8 @@ const N = 256;
 const ocean_settings = {
     height_scale: 2000.0,
     choppy_coefficient: 0.0,
+
+    show_axes: true,
 }
 
 
@@ -26,11 +29,12 @@ createModule().then((Module) => {
     const setup_params = {
         wx: 10.0,
         wz: 10.0,
+        A: 0.005,
         initialize: function() {
             if (ocean instanceof Module.FFTOcean) {ocean.delete();}
             ocean = new Module.FFTOcean(
                 L, N, setup_params.wx, setup_params.wz, 
-                0.005, ocean_settings.choppy_coefficient, ocean_settings.height_scale);
+                setup_params.A, ocean_settings.choppy_coefficient, ocean_settings.height_scale);
         }
     };
     
@@ -46,7 +50,7 @@ createModule().then((Module) => {
         renderer.setSize(window.innerWidth, window.innerHeight);
     })
     function setup_axisHelper() {
-        const axesHelper = new THREE.AxesHelper(10);
+        axesHelper = new THREE.AxesHelper(10);
         scene.add(axesHelper);
     }
     function setup_stats() {
@@ -59,10 +63,12 @@ createModule().then((Module) => {
         const folder = gui.addFolder('settings');
         folder.add(ocean_settings, 'height_scale', 0, 5000, 1).onChange(value => {ocean.set_height_scale(value)});
         folder.add(ocean_settings, 'choppy_coefficient', 0, 1000, 100).onChange(value => {ocean.set_choppy_coefficient(value)});
+        folder.add(ocean_settings, 'show_axes').onChange(value => {axesHelper.visible = value})
 
         const setup_param_folder = gui.addFolder('Setup Params');
         setup_param_folder.add(setup_params, 'wx', 0, 30);
         setup_param_folder.add(setup_params, 'wz', 0, 30);
+        setup_param_folder.add(setup_params, 'A', 0, 0.1, 0.005);
         setup_param_folder.add(setup_params, 'initialize');
     }
     function setup_three() {
@@ -70,7 +76,7 @@ createModule().then((Module) => {
         camera = new THREE.PerspectiveCamera(
             75, window.innerWidth / window.innerHeight, 0.1, 1000
         );
-        camera.position.set(5, 5, 5);
+        camera.position.set(0, 50, -100);
         camera.lookAt(0, 0, 0);
 
         renderer = new THREE.WebGLRenderer({antialias: true});
