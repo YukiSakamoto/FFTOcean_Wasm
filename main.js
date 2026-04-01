@@ -8,6 +8,8 @@ import createModule from './fftocean_wasm.js';
 let scene, camera, renderer;
 let geometry, cube, material;
 let axesHelper;
+let prev_time_virtual = 0;
+let prev_time_real = 0;
 let coordinateArray;
 let xyz_geometry;
 let mesh;       // instanced mesh
@@ -20,6 +22,7 @@ const ocean_settings = {
     height_scale: 2000.0,
     choppy_coefficient: 0.0,
 
+    speed_factor: 1.0,
     show_axes: true,
 }
 
@@ -35,6 +38,8 @@ createModule().then((Module) => {
             ocean = new Module.FFTOcean(
                 L, N, setup_params.wx, setup_params.wz, 
                 setup_params.A, ocean_settings.choppy_coefficient, ocean_settings.height_scale);
+            prev_time_real = 0.0;
+            prev_time_virtual = 0.0;
         }
     };
     
@@ -63,6 +68,7 @@ createModule().then((Module) => {
         const folder = gui.addFolder('settings');
         folder.add(ocean_settings, 'height_scale', 0, 5000, 1).onChange(value => {ocean.set_height_scale(value)});
         folder.add(ocean_settings, 'choppy_coefficient', 0, 1000, 100).onChange(value => {ocean.set_choppy_coefficient(value)});
+        folder.add(ocean_settings, 'speed_factor', 0, 10, 1);
         folder.add(ocean_settings, 'show_axes').onChange(value => {axesHelper.visible = value})
 
         const setup_param_folder = gui.addFolder('Setup Params');
@@ -113,8 +119,13 @@ createModule().then((Module) => {
     function animate() {
         requestAnimationFrame(animate);
 
-        const time = performance.now() / 1000;
-        ocean.Update(time);
+        const time_real = performance.now();
+        const dt_real = time_real - prev_time_real;
+        const time_virtual = prev_time_virtual + dt_real / 1000 * ocean_settings.speed_factor;
+        ocean.Update(time_virtual);
+        // store time as previous values;
+        prev_time_virtual = time_virtual;
+        prev_time_real = time_real;
 
         const height_ptr = ocean.get_xyz_ptr();
         const grad_ptr = ocean.get_gxyz_ptr();
