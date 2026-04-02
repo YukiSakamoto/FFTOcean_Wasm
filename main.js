@@ -17,6 +17,8 @@ let stats;
 let ocean;
 const L = 300;
 const N = 256;
+//const L = 1000;
+//const N = 512;
 
 const ocean_settings = {
     height_scale: 2000.0,
@@ -40,6 +42,17 @@ createModule().then((Module) => {
                 setup_params.A, ocean_settings.choppy_coefficient, ocean_settings.height_scale);
             prev_time_real = 0.0;
             prev_time_virtual = 0.0;
+
+            const height_ptr = ocean.get_xyz_ptr();
+            const grad_ptr = ocean.get_gxyz_ptr();
+            const heightArray = new Float32Array(Module.HEAPF32.buffer, height_ptr, N*N*3);
+            const gradArray = new Float32Array(Module.HEAPF32.buffer, grad_ptr, N*N*3);
+            geometry.setAttribute('position', new THREE.BufferAttribute(heightArray, 3));
+            geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
+            geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
+            geometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+            geometry.attributes.position.needsUpdate = true;
+            geometry.attributes.normal.needsUpdate = true;
         }
     };
     
@@ -94,11 +107,20 @@ createModule().then((Module) => {
         geometry = new THREE.PlaneGeometry(L, L, N-1, N-1);
         //material = new THREE.MeshNormalMaterial({wireframe: true, side: THREE.DoubleSide});
 
+        const height_ptr = ocean.get_xyz_ptr();
+        const grad_ptr = ocean.get_gxyz_ptr();
+        const heightArray = new Float32Array(Module.HEAPF32.buffer, height_ptr, N*N*3);
+        const gradArray = new Float32Array(Module.HEAPF32.buffer, grad_ptr, N*N*3);
+        geometry.setAttribute('position', new THREE.BufferAttribute(heightArray, 3));
+        geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
+        geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
+        geometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+
         material = new THREE.MeshStandardMaterial({
             color: 0x00bfff,       // ベースとなる水の色（深い青緑）
             metalness: 0.9,        // 金属光沢（鏡のような反射にするため高めに）
             roughness: 0.5,        // 表面の粗さ（滑らかにするため低めに）
-            //wireframe: false,       // ワイヤーフレームをオフにする（形を見るならtrueでもOK）
+            //wireframe: true,       // ワイヤーフレームをオフにする（形を見るならtrueでもOK）
             side: THREE.DoubleSide // 両面を描画
         });
         const oceanMesh = new THREE.Mesh(geometry, material);
@@ -127,14 +149,6 @@ createModule().then((Module) => {
         prev_time_virtual = time_virtual;
         prev_time_real = time_real;
 
-        const height_ptr = ocean.get_xyz_ptr();
-        const grad_ptr = ocean.get_gxyz_ptr();
-        const heightArray = new Float32Array(Module.HEAPF32.buffer, height_ptr, N*N*3);
-        const gradArray = new Float32Array(Module.HEAPF32.buffer, grad_ptr, N*N*3);
-
-        //const posAttr = geometry.attributes.position;
-        geometry.attributes.position.array.set(heightArray);
-        geometry.attributes.normal.array.set(gradArray);
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.normal.needsUpdate = true;
         stats.update();
