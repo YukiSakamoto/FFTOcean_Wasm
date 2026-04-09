@@ -13,8 +13,9 @@ class FFTOcean
 public:
     typedef std::vector<std::complex<float>> ComplexContainer;
     FFTOcean(size_t Length, size_t N, float wx = 0.f, float wy = 0.f, float A = 0.0005f, float choppy = 0.f, float height_scale = 1.0)
-        :Length(Length), N(N), wx(wx), wy(wy), A(A), t(0.f), height_scale(height_scale),
-        h0(N*N, {0.f, 0.f}), ht(N*N, {0.f, 0.f}), Gx(N*N), Gz(N*N), Dx(N*N), Dz(N*N), choppy_lambda(choppy),
+        :Length(Length), N(N), wx(wx), wy(wy), A(A), t(0.f), height_scale(height_scale), choppy_lambda(choppy),
+        h0(N*N, {0.f, 0.f}), ht(N*N, {0.f, 0.f}), Gx(N*N), Gz(N*N), 
+        Dx(N*N), Dz(N*N), Dxx(N*N), Dxz(N*N), Dzx(N*N), Dzz(N*N),
         xyz_coord(N*N*3), gxyz_coord(N*N*3)
     {
         calculate_h0();
@@ -82,6 +83,7 @@ private:
     // Container for choppy waves
     ComplexContainer Dx;
     ComplexContainer Dz;
+    ComplexContainer Dxx, Dxz, Dzx, Dzz;
     float t;
     float choppy_lambda;
     float height_scale;

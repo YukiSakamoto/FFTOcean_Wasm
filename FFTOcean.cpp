@@ -64,8 +64,13 @@ void FFTOcean::calculate_grad(void)
                 if (1e-6f < k) {
                     this->Dx[idx] = ht[idx] * (i_k * (kx / k));
                     this->Dz[idx] = ht[idx] * (i_k * (kz / k));
+                    this->Dxx[idx] = i_k * kx * this->Dx[idx];
+                    this->Dxz[idx] = i_k * kz * this->Dx[idx];
+                    this->Dzx[idx] = i_k * kx * this->Dz[idx];
+                    this->Dzz[idx] = i_k * kz * this->Dz[idx];
                 } else {
                     this->Dx[idx] = this->Dz[idx] = 0.f;
+                    this->Dxx[idx] = this->Dxz[idx] = this->Dzx[idx] = this->Dzz[idx] = 0.f;
                 }
             }
         }
@@ -86,6 +91,10 @@ void FFTOcean::iFFT() {
     if (calculate_choppy) {
         pocketfft::c2c(shape, stride, stride, axes, false, Dx.data(), Dx.data(), nn_inv);
         pocketfft::c2c(shape, stride, stride, axes, false, Dz.data(), Dz.data(), nn_inv);
+        pocketfft::c2c(shape, stride, stride, axes, false, Dxx.data(), Dxx.data(), nn_inv);
+        pocketfft::c2c(shape, stride, stride, axes, false, Dxz.data(), Dxz.data(), nn_inv);
+        pocketfft::c2c(shape, stride, stride, axes, false, Dzx.data(), Dzx.data(), nn_inv);
+        pocketfft::c2c(shape, stride, stride, axes, false, Dzz.data(), Dzz.data(), nn_inv);
     }
 }
 
@@ -99,12 +108,23 @@ void FFTOcean::processSign() {
             this->Gz[idx] *= sign;
             this->Dx[idx] *= sign;
             this->Dz[idx] *= sign;
+
+            this->Dxx[idx] *= sign;
+            this->Dxz[idx] *= sign;
+            this->Dzx[idx] *= sign;
+            this->Dzz[idx] *= sign;
         }
     }
 }
 
+inline float calculate_norm(const float x, const float y, const float z) 
+{
+    return sqrt(x*x + y*y + z*z);
+}
+
 void FFTOcean::form_xyz_array(void) {
     bool calculate_choppy = this->choppy_lambda > 1e-6f ? true : false;
+    const float lambda = this->choppy_lambda;
     for(size_t i = 0; i < this->N; i++) {
         for(size_t j = 0; j < this->N; j++) {
             size_t idx = i * N + j;
@@ -116,20 +136,30 @@ void FFTOcean::form_xyz_array(void) {
             this->xyz_coord[idx*3+1] = y;
             this->xyz_coord[idx*3+2] = z;
 
+            float dx = this->Gx[idx].real();
+            float dz = this->Gz[idx].real();
             if (calculate_choppy) {
+                // calculate horizontal displacement
                 float choppy_x = this->Dx[idx].real();
                 float choppy_z = this->Dz[idx].real();
                 this->xyz_coord[idx*3+0] += this->choppy_lambda * choppy_x;
                 this->xyz_coord[idx*3+2] += this->choppy_lambda * choppy_z;
-            } 
 
-
-            float dx = this->Gx[idx].real();
-            float dz = this->Gz[idx].real();
-            float grad_norm = sqrt(dx*dx + 1.f*1.f + dz*dz);
-            this->gxyz_coord[idx*3+0] = -dx / grad_norm;
-            this->gxyz_coord[idx*3+1] = 1.f / grad_norm;
-            this->gxyz_coord[idx*3+2] = -dz / grad_norm;
+                // calculate grad
+                float nx = dz * lambda * Dzx[idx].real() - (1 + lambda * Dzz[idx].real()) * dx;
+                float ny = (1 + lambda * Dzz[idx].real()) * (1 + lambda * Dxx[idx].real()) - lambda * lambda * Dxz[idx].real() * Dzx[idx].real();
+                float nz = dx * lambda * Dxz[idx].real() - dz * (1 + lambda * Dxx[idx].real());
+                float norm = calculate_norm(nx, ny, nz);
+                this->gxyz_coord[idx*3+0] = nx / norm;
+                this->gxyz_coord[idx*3+1] = ny / norm;
+                this->gxyz_coord[idx*3+2] = nz / norm;
+            } else {
+                // calculate only grad.
+                float grad_norm = sqrt(dx*dx + 1.f*1.f + dz*dz);
+                this->gxyz_coord[idx*3+0] = -dx / grad_norm;
+                this->gxyz_coord[idx*3+1] = 1.f / grad_norm;
+                this->gxyz_coord[idx*3+2] = -dz / grad_norm;
+            }
         }
     }
 }
