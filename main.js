@@ -107,15 +107,32 @@ createModule().then((Module) => {
         renderer.toneMappingExposure = 1.0; // 露出調整。暗ければ 1.5 くらいに。
         document.body.appendChild(renderer.domElement);
 
-        geometry = new THREE.PlaneGeometry(L, L, N-1, N-1);
+        //geometry = new THREE.PlaneGeometry(L, L, N-1, N-1);
         //material = new THREE.MeshNormalMaterial({wireframe: true, side: THREE.DoubleSide});
+
+        const indices = [];
+        for (let i = 0; i < N - 1; i++) {
+            for (let j = 0; j < N - 1; j++) {
+                const a = i * N + j;
+                const b = (i + 1) * N + j;
+                const c = i * N + (j + 1);
+                const d = (i + 1) * N + (j + 1);
+
+                indices.push(a, c, b);
+                indices.push(b, c, d);
+            }
+        }
+        geometry = new THREE.BufferGeometry();
+        geometry.setIndex(indices);
+        //geometry.setAttribute('position', new THREE.BufferAttribute(heightArray, 3));
+        //geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
 
         material = new THREE.MeshStandardMaterial({
             color: 0x00bfff,       // ベースとなる水の色（深い青緑）
             metalness: 0.9,        // 金属光沢（鏡のような反射にするため高めに）
             roughness: 0.5,        // 表面の粗さ（滑らかにするため低めに）
             //wireframe: true,       // ワイヤーフレームをオフにする（形を見るならtrueでもOK）
-            side: THREE.DoubleSide // 両面を描画
+            side: THREE.FrontSide
         });
         const oceanMesh = new THREE.Mesh(geometry, material);
         scene.add(oceanMesh);
