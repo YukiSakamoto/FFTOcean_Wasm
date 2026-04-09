@@ -35,29 +35,32 @@ createModule().then((Module) => {
         wx: 10.0,
         wz: 10.0,
         A: 0.005,
-        initialize: function() {
-            if (ocean instanceof Module.FFTOcean) {ocean.delete();}
-            ocean = new Module.FFTOcean(
-                L, N, setup_params.wx, setup_params.wz, 
-                setup_params.A, ocean_settings.choppy_coefficient, ocean_settings.height_scale);
-            prev_time_real = 0.0;
-            prev_time_virtual = 0.0;
-
-            const height_ptr = ocean.get_xyz_ptr();
-            const grad_ptr = ocean.get_gxyz_ptr();
-            const heightArray = new Float32Array(Module.HEAPF32.buffer, height_ptr, N*N*3);
-            const gradArray = new Float32Array(Module.HEAPF32.buffer, grad_ptr, N*N*3);
-            geometry.setAttribute('position', new THREE.BufferAttribute(heightArray, 3));
-            geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
-            geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
-            geometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
-            geometry.attributes.position.needsUpdate = true;
-            geometry.attributes.normal.needsUpdate = true;
-        }
+        initialize: init_FFTOcean
     };
+
+    function init_FFTOcean() {
+        if (ocean instanceof Module.FFTOcean) {ocean.delete();}
+        ocean = new Module.FFTOcean(
+            L, N, setup_params.wx, setup_params.wz, 
+            setup_params.A, ocean_settings.choppy_coefficient, ocean_settings.height_scale);
+        prev_time_real = 0.0;
+        prev_time_virtual = 0.0;
+
+        const height_ptr = ocean.get_xyz_ptr();
+        const grad_ptr = ocean.get_gxyz_ptr();
+        const heightArray = new Float32Array(Module.HEAPF32.buffer, height_ptr, N*N*3);
+        const gradArray = new Float32Array(Module.HEAPF32.buffer, grad_ptr, N*N*3);
+        geometry.setAttribute('position', new THREE.BufferAttribute(heightArray, 3));
+        geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
+        geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
+        geometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+        geometry.attributes.position.needsUpdate = true;
+        geometry.attributes.normal.needsUpdate = true;
+    }
     
-    ocean = new Module.FFTOcean(L, N, 10.0, 10.0, 0.005, 1.0, 2000);
+    //ocean = new Module.FFTOcean(L, N, 10.0, 10.0, 0.005, 1.0, 2000);
     setup_three();
+    init_FFTOcean();
     setup_stats();
     setup_axisHelper();
     setup_lilgui();
@@ -80,7 +83,7 @@ createModule().then((Module) => {
         const gui = new GUI();
         const folder = gui.addFolder('settings');
         folder.add(ocean_settings, 'height_scale', 0, 5000, 1).onChange(value => {ocean.set_height_scale(value)});
-        folder.add(ocean_settings, 'choppy_coefficient', 0, 1000, 100).onChange(value => {ocean.set_choppy_coefficient(value)});
+        folder.add(ocean_settings, 'choppy_coefficient', 0, 1000, 1).onChange(value => {ocean.set_choppy_coefficient(value)});
         folder.add(ocean_settings, 'speed_factor', 0, 10, 1);
         folder.add(ocean_settings, 'show_axes').onChange(value => {axesHelper.visible = value})
 
@@ -106,15 +109,6 @@ createModule().then((Module) => {
 
         geometry = new THREE.PlaneGeometry(L, L, N-1, N-1);
         //material = new THREE.MeshNormalMaterial({wireframe: true, side: THREE.DoubleSide});
-
-        const height_ptr = ocean.get_xyz_ptr();
-        const grad_ptr = ocean.get_gxyz_ptr();
-        const heightArray = new Float32Array(Module.HEAPF32.buffer, height_ptr, N*N*3);
-        const gradArray = new Float32Array(Module.HEAPF32.buffer, grad_ptr, N*N*3);
-        geometry.setAttribute('position', new THREE.BufferAttribute(heightArray, 3));
-        geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
-        geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
-        geometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
 
         material = new THREE.MeshStandardMaterial({
             color: 0x00bfff,       // ベースとなる水の色（深い青緑）
