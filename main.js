@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import Stats from 'three/addons/libs/stats.module.js';
 import GUI from 'lil-gui';
 import createModule from './fftocean_wasm.js';
 
 let scene, camera, renderer;
 let geometry, cube, material;
+let oceanMesh;
 let axesHelper;
 let prev_time_virtual = 0;
 let prev_time_real = 0;
@@ -15,19 +17,23 @@ let xyz_geometry;
 let mesh;       // instanced mesh
 let stats;
 let ocean;
-const L = 300;
+const L = 500;
 const N = 256;
 //const L = 1000;
 //const N = 512;
 
 const ocean_settings = {
-    height_scale: 2000.0,
+    height_scale: 1000.0,
     choppy_coefficient: 0.0,
 
     speed_factor: 1.0,
     show_axes: true,
 }
 
+const material_settings = {
+    metalness: 0.9,
+    roughness: 0.0,
+};
 
 createModule().then((Module) => {
 
@@ -87,6 +93,10 @@ createModule().then((Module) => {
         folder.add(ocean_settings, 'speed_factor', 0, 10, 1);
         folder.add(ocean_settings, 'show_axes').onChange(value => {axesHelper.visible = value})
 
+        const material_folder = gui.addFolder('Material Settings');
+        material_folder.add(material_settings, 'metalness', 0.0, 1.0).onChange( value => {material.metalness = value;});
+        material_folder.add(material_settings, 'roughness', 0.0, 1.0).onChange( value => {material.roughness = value;});
+
         const setup_param_folder = gui.addFolder('Setup Params');
         setup_param_folder.add(setup_params, 'wx', 0, 30);
         setup_param_folder.add(setup_params, 'wz', 0, 30);
@@ -128,13 +138,23 @@ createModule().then((Module) => {
         //geometry.setAttribute('normal', new THREE.BufferAttribute(gradArray, 3));
 
         material = new THREE.MeshStandardMaterial({
-            color: 0x00bfff,       // ベースとなる水の色（深い青緑）
-            metalness: 0.9,        // 金属光沢（鏡のような反射にするため高めに）
-            roughness: 0.5,        // 表面の粗さ（滑らかにするため低めに）
+            //color: 0x00bfff,       // ベースとなる水の色（深い青緑）
+            color: 0x002b36,       // ベースとなる水の色（solarized darkの色）
+            metalness: material_settings.metalness,        // 金属光沢（鏡のような反射にするため高めに）
+            roughness: material_settings.roughness,        // 表面の粗さ（滑らかにするため低めに）
             //wireframe: true,       // ワイヤーフレームをオフにする（形を見るならtrueでもOK）
-            side: THREE.FrontSide
+            side: THREE.FrontSide,
+            envMapIntensity: 1.5,
         });
-        const oceanMesh = new THREE.Mesh(geometry, material);
+
+        //for(let ix = -1; ix <= 1; ix++) {
+        //    for(let iz = -1; iz <= 1; iz++) {
+        //        const m = new THREE.Mesh(geometry, material);
+        //        m.position.set(ix * L, 0, iz * L);
+        //        scene.add(m);
+        //    }
+        //}
+        oceanMesh = new THREE.Mesh(geometry, material);
         scene.add(oceanMesh);
 
         // 太陽光（平行光源）を追加
@@ -146,7 +166,18 @@ createModule().then((Module) => {
         const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); 
         scene.add(ambientLight);
         const controls = new OrbitControls(camera, renderer.domElement);
+        controls.minDistance = 100;
+        controls.maxDistance = 200;
+        controls.maxPolarAngle = Math.PI * 0.5 * 85.0 /90.0;
         scene.environment = scene.background;
+
+        // textures
+        const exrLoader = new EXRLoader();
+        exrLoader.load('./textures/qwantani_moon_noon_puresky_1k.exr', (texture) => {
+            texture.mapping = THREE.EquirectangularRefractionMapping;
+            scene.background = texture;
+            scene.environment = texture;
+        });
     }
 
     function animate() {
@@ -159,6 +190,12 @@ createModule().then((Module) => {
         // store time as previous values;
         prev_time_virtual = time_virtual;
         prev_time_real = time_real;
+
+        //oceanMesh.position.x = camera.position.x;
+        //oceanMesh.position.z = camera.position.z;
+        //const tile = L;
+        //oceanMesh.position.x = Math.floor(camera.position.x / tile) * tile;
+        //oceanMesh.position.z = Math.floor(camera.position.z / tile) * tile;
 
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.normal.needsUpdate = true;
