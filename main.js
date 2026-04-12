@@ -17,7 +17,7 @@ let xyz_geometry;
 let mesh;       // instanced mesh
 let stats;
 let ocean;
-const L = 500;
+const L = 500 * 2.0;
 const N = 256;
 //const L = 1000;
 //const N = 512;
