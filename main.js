@@ -23,7 +23,7 @@ const N = 256;
 //const N = 512;
 
 const ocean_settings = {
-    height_scale: 1000.0,
+    height_scale: 700.0,
     choppy_coefficient: 0.0,
 
     speed_factor: 1.0,
