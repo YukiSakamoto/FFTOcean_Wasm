@@ -23,7 +23,7 @@ const N = 256;
 //const N = 512;
 
 const ocean_settings = {
-    height_scale: 700.0,
+    height_scale: 500.0,
     choppy_coefficient: 0.0,
 
     speed_factor: 1.0,
@@ -167,7 +167,7 @@ createModule().then((Module) => {
         scene.add(ambientLight);
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.minDistance = 100;
-        controls.maxDistance = 200;
+        controls.maxDistance = 300;
         controls.maxPolarAngle = Math.PI * 0.5 * 85.0 /90.0;
         scene.environment = scene.background;
 
